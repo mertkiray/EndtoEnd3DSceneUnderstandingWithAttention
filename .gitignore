@@ -190,5 +190,4 @@ octave-workspace
 ## project
 /demo/outputs/*
 /out
-/data
 /wandb
