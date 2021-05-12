@@ -134,6 +134,7 @@ __MACOSX/
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff
+.idea
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
@@ -188,6 +189,9 @@ octave-workspace
 
 
 ## project
-/demo/outputs/*
+/demo/outputs
 /out
 /wandb
+/data/pix3d/ldif
+/data/pix3d/metadata
+/data/sunrgbd/sunrgbd_train_test_data

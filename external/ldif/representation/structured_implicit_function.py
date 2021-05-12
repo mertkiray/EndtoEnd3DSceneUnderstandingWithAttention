@@ -51,8 +51,8 @@ class StructuredImplicit(object):
         max_euler_angle = np.pi / 4.0
         radius_rot = torch.clamp(radius[..., 3:], -max_euler_angle, max_euler_angle)
         radius = torch.cat([radius_var, radius_rot], -1)
-        center /= 2
-        return cls(config, constant, center, radius, iparam, net)
+        center_a = center/2
+        return cls(config, constant, center_a, radius, iparam, net)
 
     def _tile_for_symgroups(self, elements):
         # Tiles an input tensor along its element dimension based on symmetry
