@@ -54,7 +54,7 @@ def run(cfg):
     cfg.log_string('Loading model.')
     net = load_model(cfg, device=device)
     checkpoint.register_modules(net=net)
-    cfg.log_string(net)
+    # cfg.log_string(net)
     wandb.watch(net, log=None)
 
     '''Load optimizer'''

@@ -13,8 +13,8 @@ class Config(object):
         """
         self.dataset = dataset
         self.root_path = './data/' + self.dataset
-        self.train_split = self.root_path + '/splits/train.json'
-        self.test_split = self.root_path + '/splits/test.json'
+        self.train_split = self.root_path + '/splits/train_small.json'
+        self.test_split = self.root_path + '/splits/test_small.json'
         self.metadata_path = self.root_path + '/metadata'
         self.train_test_data_path = self.root_path + '/train_test_data'
         if dataset == 'pix3d':

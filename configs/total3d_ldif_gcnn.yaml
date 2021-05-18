@@ -2,8 +2,8 @@ method: TOTAL3D
 resume: False
 finetune: True
 weight: ['out/pretrained_models/total3d/model_best.pth',
-         'out/layout_estimation/20101621195486/model_best.pth',
-         'out/ldif/20101613380518/model_best.pth']
+         'out/layout_estimation/21051619290367/model_best.pth',
+         'out/ldif/21051619350035/model_best.pth']
 seed: 123
 device:
   use_gpu: True
@@ -80,13 +80,13 @@ train:
   epochs: 30
   phase: 'joint' # 'layout_estimation' or 'object_detection' or 'joint'.
   freeze: ['layout_estimation', 'object_detection', 'mesh_reconstruction']
-  batch_size: 2
+  batch_size: 4
 val:
   phase: 'joint'
-  batch_size: 2
+  batch_size: 4
 test:
   phase: 'joint'
-  batch_size: 1
+  batch_size: 4
 demo:
   phase: 'joint'
 log:

@@ -19,7 +19,7 @@ class SUNRGBD(Dataset):
         if mode == 'val':
             mode = 'test'
         self.mode = mode
-        split_file = os.path.join(config['data']['split'], mode + '.json')
+        split_file = os.path.join(config['data']['split'], mode + '_small.json')
         with open(split_file) as file:
             split = json.load(file)
         self.split = []
@@ -46,7 +46,7 @@ class PIX3D(Dataset):
         if mode == 'val':
             mode = 'test'
         self.mode = mode
-        split_file = os.path.join(config['data']['split'], mode + '.json')
+        split_file = os.path.join(config['data']['split'], mode + '_small.json')
         with open(split_file) as file:
             self.split = json.load(file)
 
@@ -65,7 +65,7 @@ class PIX3DLDIF(Dataset):
         self.mode = mode
         if mode == 'val':
             mode = 'test'
-        split_file = os.path.join(config['data']['split'], mode + '.json')
+        split_file = os.path.join(config['data']['split'], mode + '_small.json')
         with open(split_file) as file:
             split = json.load(file)
 

@@ -228,4 +228,4 @@ def run(cfg):
 
     scene_box = Box(image, None, cam_K, None, pre_cam_R, None, pre_layout, None, pre_boxes, 'prediction', output_mesh = vtk_objects)
     scene_box.draw_projected_bdb3d('prediction', if_save=True, save_path = '%s/3dbbox.png' % (save_path))
-    scene_box.draw3D(if_save=True, save_path = '%s/recon.png' % (save_path))
+    scene_box.draw3D(if_save=False, save_path = '%s/recon.png' % (save_path))

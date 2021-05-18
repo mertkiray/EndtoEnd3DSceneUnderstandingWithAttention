@@ -435,7 +435,7 @@ if __name__ == '__main__':
     args = parse_args()
     sunrgbd_config = SUNRGBD_CONFIG()
 
-    test_split = 'data/sunrgbd/splits/test.json'
+    test_split = 'data/sunrgbd/splits/test_single.json'
     with open(test_split, 'r') as f:
         data_frame = json.load(f)
 
