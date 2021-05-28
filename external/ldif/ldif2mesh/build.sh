@@ -39,7 +39,7 @@ fi
 if [[ $major_version -ge 10 ]]; then
   echo "Adding CUDA 10 Targets."
   targets="${targets} \
-    -gencode=arch=compute_61,code=sm_61"
+    -gencode=arch=compute_75,code=sm_75"
 fi
 
 # Support for Ampere  (e.g. RTX 3090). Requires CUDA 11.
