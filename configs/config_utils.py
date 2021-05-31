@@ -172,6 +172,9 @@ class CONFIG(object):
         self._logger.info(content)
         print(content)
 
+    def log_model(self, content):
+        self._logger.info(content)
+
     def read_to_dict(self, input):
         if not input:
             return dict()
