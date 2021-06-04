@@ -65,12 +65,12 @@ class _Collection_Unit_wAttention(nn.Module):
         # return collect_avg
         ## attention forward
         result, (edge_index, att_weights) = self.att_matrix(source, attention_base, return_attention_weights=True)
-        print('in collection unit, line 68')
-        print(result.shape)
-        print(result[0, :])
-        print(result)
-        print('edge + weights')
-        print(edge_index)
+        # print('in collection unit, line 68')
+        # print(result.shape)
+        # print(result[0, :])
+        # print(result)
+        # print('edge + weights')
+        # print(edge_index)
         print(att_weights)
         return result
 
@@ -402,11 +402,11 @@ class GCNN(nn.Module):
         pred_subj_map = map_init(rel_inds.shape[0], obj_num)
         obj_pred_map = map_init(obj_num, rel_inds.shape[0])
         pred_obj_map = map_init(rel_inds.shape[0], obj_num)
-
+        adj_map = map_init(obj_num + rel_inds.shape[0], obj_num + rel_inds.shape[0])
 
         return rel_masks.to(device), obj_masks.to(device), lo_masks.to(device), \
                obj_obj_map.to(device), subj_pred_map.to(device), obj_pred_map.to(device), \
-               pred_subj_map.to(device), pred_obj_map.to(device)
+               pred_subj_map.to(device), pred_obj_map.to(device), adj_map.to(device)
 
     def forward(self, output):
         maps = self._get_map(output)
@@ -414,16 +414,20 @@ class GCNN(nn.Module):
             return {}
 
         ## attention maps
-        rel_masks, obj_masks, lo_masks, obj_obj_map, subj_pred_map, obj_pred_map, pred_subj_map, pred_obj_map = maps
+        rel_masks, obj_masks, lo_masks, obj_obj_map, subj_pred_map, obj_pred_map, \
+        pred_subj_map, pred_obj_map, adj_map = maps
+        num_objects = obj_masks.shape[0] - 1
+        print(num_objects)
         print('line 363')
-        print(rel_masks.shape)
-        print(obj_masks.shape)
-        print(lo_masks.shape)
-        print(obj_obj_map.shape)
-        print(subj_pred_map.shape)
-        print(obj_pred_map.shape)
-        print(pred_subj_map.shape)
-        print(pred_obj_map.shape)
+        # print(rel_masks.shape)
+        # print(obj_masks.shape)
+        # print(lo_masks.shape)
+        # print(obj_obj_map.shape)
+        # print(subj_pred_map.shape)
+        # print(obj_pred_map.shape)
+        # print(pred_subj_map.shape)
+        # print(pred_obj_map.shape)
+        print(adj_map.shape)
         print('line 370')
         #print(output)
         x_obj, x_pred = self._get_object_features(output, 'obj'), self._get_object_features(output, 'rel')
@@ -477,33 +481,36 @@ class GCNN(nn.Module):
         '''feature level agcn'''
         obj_feats = [x_obj]
         pred_feats = [x_pred]
-
+        all_feats = torch.cat((x_obj, x_pred), dim=0)
         start = 0
         for group, (gcn_collect_feat, gcn_update_feat) in enumerate(zip(self.gcn_collect_feat, self.gcn_update_feat)):
             for t in range(start, start + self.feat_update_step):
                 '''update object features'''
                 # message from other objects
-                source_obj = gcn_collect_feat(obj_feats[t], obj_feats[t], obj_obj_map, 4)
-
-                # message from predicate
-                source_rel_sub = gcn_collect_feat(obj_feats[t], pred_feats[t], subj_pred_map, 0)
-                source_rel_obj = gcn_collect_feat(obj_feats[t], pred_feats[t], obj_pred_map, 1)
-                source2obj_all = (source_obj + source_rel_sub + source_rel_obj) / 3
-                obj_feats.append(gcn_update_feat(obj_feats[t], source2obj_all, 0))
-
-                '''update predicate features'''
-                # source_obj_sub = gcn_collect_feat(pred_feats[t], obj_feats[t], subj_pred_map.t(), 2)
-                # source_obj_obj = gcn_collect_feat(pred_feats[t], obj_feats[t], obj_pred_map.t(), 3)
-                source_obj_sub = gcn_collect_feat(pred_feats[t], obj_feats[t], pred_subj_map, 2)
-                source_obj_obj = gcn_collect_feat(pred_feats[t], obj_feats[t], pred_obj_map, 3)
-                source2rel_all = (source_obj_sub + source_obj_obj) / 2
-                pred_feats.append(gcn_update_feat(pred_feats[t], source2rel_all, 1))
+                # source_obj = gcn_collect_feat(obj_feats[t], obj_feats[t], obj_obj_map, 4)
+                #
+                # # message from predicate
+                # source_rel_sub = gcn_collect_feat(obj_feats[t], pred_feats[t], subj_pred_map, 0)
+                # source_rel_obj = gcn_collect_feat(obj_feats[t], pred_feats[t], obj_pred_map, 1)
+                # source2obj_all = (source_obj + source_rel_sub + source_rel_obj) / 3
+                # obj_feats.append(gcn_update_feat(obj_feats[t], source2obj_all, 0))
+                #
+                # '''update predicate features'''
+                # # source_obj_sub = gcn_collect_feat(pred_feats[t], obj_feats[t], subj_pred_map.t(), 2)
+                # # source_obj_obj = gcn_collect_feat(pred_feats[t], obj_feats[t], obj_pred_map.t(), 3)
+                # source_obj_sub = gcn_collect_feat(pred_feats[t], obj_feats[t], pred_subj_map, 2)
+                # source_obj_obj = gcn_collect_feat(pred_feats[t], obj_feats[t], pred_obj_map, 3)
+                # source2rel_all = (source_obj_sub + source_obj_obj) / 2
+                # pred_feats.append(gcn_update_feat(pred_feats[t], source2rel_all, 1))
+                all_feats = gcn_collect_feat(all_feats, all_feats, adj_map, 4)
+                #all_feats = gcn_update_feat(all_feats, source_all, 0)
             if self.res_group and group > 0:
                 obj_feats[-1] += obj_feats[start]
                 pred_feats[-1] += pred_feats[start]
             start += self.feat_update_step
 
-        obj_feats_wolo = obj_feats[-1][obj_masks]
+        #obj_feats_wolo = obj_feats[-1][obj_masks]
+        obj_feats_wolo = all_feats[:num_objects]
         print('line 442')
         print(len(obj_feats))
         print(obj_feats_wolo.shape)
@@ -537,7 +544,8 @@ class GCNN(nn.Module):
         offset = self.dropout_1(offset)
         offset = self.fc_off_2(offset)
 
-        obj_feats_lo = obj_feats[-1][lo_masks]
+        #obj_feats_lo = obj_feats[-1][lo_masks]
+        obj_feats_lo = all_feats[num_objects:num_objects+1]
         print('line 476')
         print(obj_feats_lo.shape)
         # branch for camera parameters
@@ -587,7 +595,7 @@ class GCNN(nn.Module):
         print(lo_centroid.shape)
         print(lo_coeffs.shape)
         print('end')
-        exit(0)
+        #exit(0)
         if self.res_output:
             size += output['size_reg_result']
             ori_reg += output['ori_reg_result']
