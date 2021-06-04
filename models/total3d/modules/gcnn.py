@@ -8,7 +8,7 @@ from configs.data_config import NYU40CLASSES, pix3d_n_classes
 import torch.nn.functional as F
 from net_utils.libs import get_bdb_form_from_corners, recover_points_to_world_sys, \
     get_rotation_matix_result, get_bdb_3d_result, recover_points_to_obj_sys
-
+from torch_geometric.nn.conv import GATConv
 
 def normal_init(m, mean, stddev, truncated=False):
     if truncated:
@@ -41,17 +41,61 @@ class _Update_Unit(nn.Module):
         return update
 
 
+def map_init(dim_in, dim_out):
+    edge_index = torch.zeros((2, dim_in * dim_out), dtype=torch.long)
+    for i in range(dim_in):
+        for j in range(dim_out):
+            edge_index[0][i * dim_out + j] = i
+            edge_index[1][i * dim_out + j] = j
+    return edge_index
+
+
+class _Collection_Unit_wAttention(nn.Module):
+    def __init__(self, dim_in, dim_out):
+        super(_Collection_Unit_wAttention, self).__init__()
+        #self.fc = nn.Linear(dim_in, dim_out, bias=True)
+        self.att_matrix = GATConv(dim_in, dim_out)
+        #normal_init(self.fc, 0, 0.01)
+
+    def forward(self, target, source, attention_base):
+        # assert attention_base.size(0) == source.size(0), "source number must be equal to attention number"
+        # fc_out = F.relu(self.fc(source))
+        # collect = torch.mm(attention_base, fc_out)  # Nobj x Nrel Nrel x dim
+        # collect_avg = collect / (attention_base.sum(1).view(collect.size(0), 1) + 1e-7)
+        # return collect_avg
+        ## attention forward
+        result, (edge_index, att_weights) = self.att_matrix(source, attention_base, return_attention_weights=True)
+        print('in collection unit, line 68')
+        print(result.shape)
+        print(result[0, :])
+        print(result)
+        print('edge + weights')
+        print(edge_index)
+        print(att_weights)
+        return result
+
+
+class _Update_Unit_wAttention(nn.Module):
+    def __init__(self, dim):
+        super(_Update_Unit_wAttention, self).__init__()
+
+    def forward(self, target, source):
+        assert target.size() == source.size(), "source dimension must be equal to target dimension"
+        update = target + source
+        return update
+
+
 class _GraphConvolutionLayer_Collect(nn.Module):
     """ graph convolutional layer """
     """ collect information from neighbors """
     def __init__(self, dim_obj, dim_rel):
         super(_GraphConvolutionLayer_Collect, self).__init__()
         self.collect_units = nn.ModuleList()
-        self.collect_units.append(_Collection_Unit(dim_rel, dim_obj)) # obj (subject) from rel
-        self.collect_units.append(_Collection_Unit(dim_rel, dim_obj)) # obj (object) from rel
-        self.collect_units.append(_Collection_Unit(dim_obj, dim_rel)) # rel from obj (subject)
-        self.collect_units.append(_Collection_Unit(dim_obj, dim_rel)) # rel from obj (object)
-        self.collect_units.append(_Collection_Unit(dim_obj, dim_obj)) # obj from obj
+        self.collect_units.append(_Collection_Unit_wAttention(dim_rel, dim_obj)) # obj (subject) from rel
+        self.collect_units.append(_Collection_Unit_wAttention(dim_rel, dim_obj)) # obj (object) from rel
+        self.collect_units.append(_Collection_Unit_wAttention(dim_obj, dim_rel)) # rel from obj (subject)
+        self.collect_units.append(_Collection_Unit_wAttention(dim_obj, dim_rel)) # rel from obj (object)
+        self.collect_units.append(_Collection_Unit_wAttention(dim_obj, dim_obj)) # obj from obj
 
     def forward(self, target, source, attention, unit_id):
         collection = self.collect_units[unit_id](target, source, attention)
@@ -317,7 +361,6 @@ class GCNN(nn.Module):
                 v = self._K2feature(data[k])
             else:
                 raise NotImplementedError
-
             features.append(v)
         return torch.cat(features, -1)
 
@@ -353,34 +396,84 @@ class GCNN(nn.Module):
         # map from object (an object or layout vertex) to predicate (a relation vertex)
         obj_pred_map.scatter_(0, (rel_inds[:, 1].view(1, -1)), 1)
 
+        ## attention maps
+        obj_obj_map = map_init(obj_num, obj_num)
+        subj_pred_map = map_init(obj_num, rel_inds.shape[0])
+        pred_subj_map = map_init(rel_inds.shape[0], obj_num)
+        obj_pred_map = map_init(obj_num, rel_inds.shape[0])
+        pred_obj_map = map_init(rel_inds.shape[0], obj_num)
+
+
         return rel_masks.to(device), obj_masks.to(device), lo_masks.to(device), \
-               obj_obj_map.to(device), subj_pred_map.to(device), obj_pred_map.to(device)
+               obj_obj_map.to(device), subj_pred_map.to(device), obj_pred_map.to(device), \
+               pred_subj_map.to(device), pred_obj_map.to(device)
 
     def forward(self, output):
         maps = self._get_map(output)
         if maps is None:
             return {}
-        rel_masks, obj_masks, lo_masks, obj_obj_map, subj_pred_map, obj_pred_map = maps
 
+        ## attention maps
+        rel_masks, obj_masks, lo_masks, obj_obj_map, subj_pred_map, obj_pred_map, pred_subj_map, pred_obj_map = maps
+        print('line 363')
+        print(rel_masks.shape)
+        print(obj_masks.shape)
+        print(lo_masks.shape)
+        print(obj_obj_map.shape)
+        print(subj_pred_map.shape)
+        print(obj_pred_map.shape)
+        print(pred_subj_map.shape)
+        print(pred_obj_map.shape)
+        print('line 370')
+        #print(output)
         x_obj, x_pred = self._get_object_features(output, 'obj'), self._get_object_features(output, 'rel')
+        print('line 373')
+        print(x_obj.shape)
+        print(x_pred.shape)
         x_obj, x_pred = self.obj_embedding(x_obj), self.rel_embedding(x_pred)
+        print('line 377')
+        print(x_obj.shape)
+        print(x_pred.shape)
         x_lo = self._get_layout_features(output)
+        print('line 381')
+        print(x_lo.shape)
         x_lo = self.lo_embedding(x_lo)
+        print('line 384')
+        print(x_lo.shape)
 
         x_obj_lo = [] # representation of object and layout vertices
         x_pred_objlo = [] # representation of relation vertices connecting obj/lo vertices
         rel_pair = output['rel_pair_counts']
         for lo_index, (start, end) in enumerate(output['split']):
+            print('line 391')
+            print(lo_index)
+            print(start)
+            print(end)
+            print(x_obj[start:end].shape)
+            print(x_lo[lo_index:lo_index+1].shape)
             x_obj_lo.append(x_obj[start:end]) # for each subgraph, first Ni vertices are objects
             x_obj_lo.append(x_lo[lo_index:lo_index+1]) # for each subgraph, last 1 vertex is layout
             x_pred_objlo.append(
                 x_pred[rel_pair[lo_index]:rel_pair[lo_index + 1]].reshape(end - start, end - start, -1))
             x_pred_objlo[-1] = F.pad(x_pred_objlo[-1].permute(2,0,1), [0, 1, 0, 1], "constant", 0.001).permute(1,2,0)
             x_pred_objlo[-1] = x_pred_objlo[-1].reshape((end - start + 1) ** 2, -1)
+        print('line 403')
+        print(len(x_obj_lo))
+        print(len(x_obj_lo[0]))
+        print(x_obj_lo[0].shape)
+        print(len(x_pred_objlo))
+        print(len(x_pred_objlo[0]))
+        print(x_pred_objlo[0].shape)
+        print(x_obj.shape)
+        print(x_pred.shape)
         x_obj = torch.cat(x_obj_lo) # from here, for compatibility with graph-rcnn, x_obj corresponds to obj/lo vertices
         x_pred = torch.cat(x_pred_objlo)
+        print('line 408')
+        print(x_pred.shape)
         x_pred = x_pred[rel_masks]
-
+        print('line 411')
+        print(x_obj.shape)
+        print(x_pred.shape)
         '''feature level agcn'''
         obj_feats = [x_obj]
         pred_feats = [x_pred]
@@ -399,8 +492,10 @@ class GCNN(nn.Module):
                 obj_feats.append(gcn_update_feat(obj_feats[t], source2obj_all, 0))
 
                 '''update predicate features'''
-                source_obj_sub = gcn_collect_feat(pred_feats[t], obj_feats[t], subj_pred_map.t(), 2)
-                source_obj_obj = gcn_collect_feat(pred_feats[t], obj_feats[t], obj_pred_map.t(), 3)
+                # source_obj_sub = gcn_collect_feat(pred_feats[t], obj_feats[t], subj_pred_map.t(), 2)
+                # source_obj_obj = gcn_collect_feat(pred_feats[t], obj_feats[t], obj_pred_map.t(), 3)
+                source_obj_sub = gcn_collect_feat(pred_feats[t], obj_feats[t], pred_subj_map, 2)
+                source_obj_obj = gcn_collect_feat(pred_feats[t], obj_feats[t], pred_obj_map, 3)
                 source2rel_all = (source_obj_sub + source_obj_obj) / 2
                 pred_feats.append(gcn_update_feat(pred_feats[t], source2rel_all, 1))
             if self.res_group and group > 0:
@@ -409,7 +504,9 @@ class GCNN(nn.Module):
             start += self.feat_update_step
 
         obj_feats_wolo = obj_feats[-1][obj_masks]
-
+        print('line 442')
+        print(len(obj_feats))
+        print(obj_feats_wolo.shape)
         # branch to predict the size
         size = self.fc1(obj_feats_wolo)
         size = self.relu_1(size)
@@ -441,7 +538,8 @@ class GCNN(nn.Module):
         offset = self.fc_off_2(offset)
 
         obj_feats_lo = obj_feats[-1][lo_masks]
-
+        print('line 476')
+        print(obj_feats_lo.shape)
         # branch for camera parameters
         cam = self.fc_1(obj_feats_lo)
         cam = self.relu_1(cam)
@@ -472,6 +570,24 @@ class GCNN(nn.Module):
         lo_centroid = lo_ct[:, :3]
         lo_coeffs = lo_ct[:, 3:]
 
+        print('line 508')
+        print(size.shape)
+        print(ori_reg.shape)
+        print(ori_cls.shape)
+        print(centroid_cls.shape)
+        print(centroid_reg.shape)
+        print(offset.shape)
+        print(cam.shape)
+        print(pitch_reg.shape)
+        print(pitch_cls.shape)
+        print(roll_reg.shape)
+        print(roll_cls.shape)
+        print(lo_ori_reg.shape)
+        print(lo_ori_cls.shape)
+        print(lo_centroid.shape)
+        print(lo_coeffs.shape)
+        print('end')
+        exit(0)
         if self.res_output:
             size += output['size_reg_result']
             ori_reg += output['ori_reg_result']
