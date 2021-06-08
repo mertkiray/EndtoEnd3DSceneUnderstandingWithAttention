@@ -11,28 +11,21 @@ from net_utils.libs import get_bdb_form_from_corners, recover_points_to_world_sy
 from torch_geometric.nn.conv import GATConv
 
 
-def map_init(dim_in, dim_out):
-    edge_index = torch.zeros((2, dim_in * dim_out), dtype=torch.long)
-    for i in range(dim_in):
-        for j in range(dim_out):
-            edge_index[0][i * dim_out + j] = i
-            edge_index[1][i * dim_out + j] = j
-    return edge_index
-
-
 class Collection_Unit_wAttention(nn.Module):
     def __init__(self, dim_in, dim_out):
         super(Collection_Unit_wAttention, self).__init__()
-        self.conv1 = GATConv(dim_in, dim_out, heads=1)
-        # self.conv2 = GATConv(512 * 2, 512, heads=1)
+        self.conv1 = GATConv(dim_in, dim_out//4, heads=4, dropout=0.2)
+        self.conv2 = GATConv(dim_out, dim_out//4, heads=4, dropout=0.2)
 
     def forward(self, graph, attention_base):
         ## attention forward
-        result = self.conv1(graph, attention_base)
+        # result = self.conv1(graph, attention_base)
+        x_1 = F.elu(self.conv1(graph, attention_base) + graph)
+        x = F.elu(self.conv2(x_1, attention_base) + x_1)
         # print(f'result shape: {result.shape}')
         # result1 = F.elu(result)
         # result = self.conv2(result1, attention_base)
-        return result
+        return x
 
 
 @MODULES.register_module
