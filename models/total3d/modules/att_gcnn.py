@@ -9,24 +9,40 @@ import torch.nn.functional as F
 from net_utils.libs import get_bdb_form_from_corners, recover_points_to_world_sys, \
     get_rotation_matix_result, get_bdb_3d_result, recover_points_to_obj_sys
 from torch_geometric.nn.conv import GATConv
+import wandb
 
 
 class Collection_Unit_wAttention(nn.Module):
-    def __init__(self, dim_in, dim_out):
+    def __init__(self, dim_in,dim_out, hidden_size, layer_size, heads, final_head, dropout, final_dropout):
         super(Collection_Unit_wAttention, self).__init__()
-        self.conv1 = GATConv(dim_in, dim_out//4, heads=4, dropout=0.2)
-        self.conv2 = GATConv(dim_out, dim_out//4, heads=4, dropout=0.2)
+
+        self.convs = nn.ModuleList()
+        self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
+        for layer in range(layer_size):
+            if layer != layer_size - 1:
+                self.convs.append(
+                    GATConv(hidden_size * heads, hidden_size, heads=heads, dropout=dropout)
+                )
+            else:
+                self.convs.append(
+                    GATConv(hidden_size * heads, dim_out, heads=final_head, concat=False, dropout=final_dropout)
+                )
 
     def forward(self, graph, attention_base):
         ## attention forward
         # result = self.conv1(graph, attention_base)
-        x_1 = F.elu(self.conv1(graph, attention_base) + graph)
-        x = F.elu(self.conv2(x_1, attention_base) + x_1)
+        x = F.elu(self.conv1(graph, attention_base) + graph)
+        # x = self.conv2(x_1, attention_base) + x_1
+
+        for i, layer in enumerate(self.convs):
+            if i != len(self.convs)-1:
+                x = F.elu(layer(x, attention_base) + x)
+            else:
+                x = layer(x, attention_base) + x
+        return x
         # print(f'result shape: {result.shape}')
         # result1 = F.elu(result)
         # result = self.conv2(result1, attention_base)
-        return x
-
 
 @MODULES.register_module
 class ATGCNN(nn.Module):
@@ -46,6 +62,23 @@ class ATGCNN(nn.Module):
         self.res_output = cfg.config['model']['output_adjust'].get('res_output', False)
         self.feat_update_group = cfg.config['model']['output_adjust'].get('feat_update_group', 1)
         self.res_group = cfg.config['model']['output_adjust'].get('res_group', False)
+        self.heads = cfg.config['model']['output_adjust']['heads']
+        self.final_head = cfg.config['model']['output_adjust']['final_head']
+        self.hidden_size = cfg.config['model']['output_adjust']['hidden_size']
+        self.layer_size = cfg.config['model']['output_adjust']['layer_size']
+        self.dropout = cfg.config['model']['output_adjust']['dropout']
+        self.final_dropout = cfg.config['model']['output_adjust']['final_dropout']
+
+
+        print(f'heads: {self.heads}')
+        print(f'final_head: {self.final_head}')
+        print(f'hidden_size: {self.hidden_size}')
+        print(f'layer_size: {self.layer_size}')
+        print(f'dropout: {self.dropout}')
+        print(f'final_dropout: {self.final_dropout}')
+        print(f'feature_dim: {feature_dim}')
+        print(f'feat_update_step: {self.feat_update_step}')
+        # print(f'wandb config: {wandb.config}')
 
         self.feature_length = {
             'size_cls': len(NYU40CLASSES), 'cls_codes': pix3d_n_classes,
@@ -97,7 +130,8 @@ class ATGCNN(nn.Module):
         if self.feat_update_step > 0:
             # self.gcn_collect_feat = nn.ModuleList([
             #     _GraphConvolutionLayer_Collect(feature_dim, feature_dim) for i in range(self.feat_update_group)])
-            self.gcn_collect_feat = Collection_Unit_wAttention(feature_dim, feature_dim)
+            self.gcn_collect_feat = Collection_Unit_wAttention(feature_dim, feature_dim, self.hidden_size, self.layer_size,
+                                                               self.heads, self.final_head, self.dropout, self.final_dropout)
 
         # feature to output (from Total3D object_detection)
         # branch to predict the size

@@ -58,6 +58,12 @@ model:
     loss: Null
     feature_dim: 512
     feat_update_step: 1
+    heads: 4
+    final_head: 2
+    hidden_size: 128
+    layer_size: 2
+    dropout: 0.2
+    final_dropout: 0.2
     res_output: True
     lo_features: ['pitch_reg_result', 'roll_reg_result', 'pitch_cls_result',
                   'roll_cls_result', 'lo_ori_reg_result', 'lo_ori_cls_result',
@@ -77,7 +83,7 @@ scheduler:
   milestones: [100, 100, 100]
   gamma: 0.5
 train:
-  epochs: 50
+  epochs: 2
   phase: 'joint' # 'layout_estimation' or 'object_detection' or 'joint'.
   freeze: ['layout_estimation', 'object_detection', 'mesh_reconstruction']
   batch_size: 2
