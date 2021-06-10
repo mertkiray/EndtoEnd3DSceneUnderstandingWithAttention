@@ -15,6 +15,7 @@ import wandb
 class Collection_Unit_wAttention(nn.Module):
     def __init__(self, dim_in,dim_out, hidden_size, layer_size, heads, final_head, dropout, final_dropout):
         super(Collection_Unit_wAttention, self).__init__()
+        self.layer_size = layer_size
 
         self.convs = nn.ModuleList()
         if layer_size != 0:
@@ -35,7 +36,10 @@ class Collection_Unit_wAttention(nn.Module):
     def forward(self, graph, attention_base):
         ## attention forward
         # result = self.conv1(graph, attention_base)
-        x = F.elu(self.conv1(graph, attention_base) + graph)
+        if self.layer_size != 0:
+            x = F.elu(self.conv1(graph, attention_base) + graph)
+        else:
+            x = self.conv1(graph, attention_base) + graph
         # x = self.conv2(x_1, attention_base) + x_1
 
         for i, layer in enumerate(self.convs):
