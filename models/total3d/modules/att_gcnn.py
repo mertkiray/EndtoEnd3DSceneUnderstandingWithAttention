@@ -17,7 +17,11 @@ class Collection_Unit_wAttention(nn.Module):
         super(Collection_Unit_wAttention, self).__init__()
 
         self.convs = nn.ModuleList()
-        self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
+        if layer_size != 0:
+            self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
+        else:
+            self.conv1 = GATConv(dim_in, dim_out, heads=heads, concat=False, dropout=dropout)
+
         for layer in range(layer_size):
             if layer != layer_size - 1:
                 self.convs.append(
