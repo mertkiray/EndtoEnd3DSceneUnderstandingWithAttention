@@ -23,11 +23,17 @@ def run(cfg):
                name=name, id=id, resume=resume)
     wandb.summary['pid'] = os.getpid()
     wandb.summary['ppid'] = os.getppid()
-    # if cfg.config != dict(wandb.config):
-    #     cfg.log_string('Updating configurations from wandb.')
-    #     cfg.config.update(wandb.config)
-    #     cfg.write_config()
-    #     cfg.log_string(cfg.config)
+    if cfg.config != dict(wandb.config):
+        cfg.log_string('Updating configurations from wandb.')
+    #    cfg.config.update(wandb.config)
+        for keys, value in wandb.config.items():
+            key_list = keys.split(".")
+            if len(key_list) == 2:
+                cfg.config[key_list[0]][key_list[1]] = value
+            if len(key_list) == 3:
+                cfg.config[key_list[0]][key_list[1]][key_list[2]] = value
+        cfg.write_config()
+        cfg.log_string(cfg.config)
 
     if resume:
         cfg.update_config(weight=os.path.join(cfg.config['log']['path'], 'model_last.pth'))

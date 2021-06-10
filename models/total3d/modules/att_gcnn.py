@@ -13,40 +13,51 @@ import wandb
 
 
 class Collection_Unit_wAttention(nn.Module):
-    def __init__(self, dim_in,dim_out, hidden_size, layer_size, heads, final_head, dropout, final_dropout):
+    def __init__(self, dim_in,dim_out, hidden_size, layer_size, heads, dropout):
         super(Collection_Unit_wAttention, self).__init__()
         self.layer_size = layer_size
 
         self.convs = nn.ModuleList()
-        if layer_size != 0:
-            self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
-        else:
-            self.conv1 = GATConv(dim_in, dim_out, heads=heads, concat=False, dropout=dropout)
+        # if layer_size != 0:
+        #     self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
+        # else:
+        #     self.conv1 = GATConv(dim_in, dim_out, heads=heads, concat=False, dropout=dropout)
+        # for layer in range(layer_size):
+        #     if layer != layer_size - 1:
+        #         self.convs.append(
+        #             GATConv(hidden_size * heads, hidden_size, heads=heads, dropout=dropout)
+        #         )
+        #     else:
+        #         self.convs.append(
+        #             GATConv(hidden_size * heads, dim_out, heads=final_head, concat=False, dropout=final_dropout)
+        #         )
 
-        for layer in range(layer_size):
-            if layer != layer_size - 1:
-                self.convs.append(
-                    GATConv(hidden_size * heads, hidden_size, heads=heads, dropout=dropout)
-                )
-            else:
-                self.convs.append(
-                    GATConv(hidden_size * heads, dim_out, heads=final_head, concat=False, dropout=final_dropout)
-                )
+        if layer_size > 0:
+            self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
+            for layer in range(layer_size):
+                if layer != layer_size - 1:
+                    self.convs.append(
+                        GATConv(hidden_size * heads, hidden_size, heads=heads, dropout=dropout))
+                else:
+                    self.convs.append(
+                        GATConv(hidden_size * heads, dim_out, heads=heads, dropout=dropout))
+        else:
+            self.conv1 = GATConv(dim_in, dim_out // heads, heads=heads, dropout=dropout)
 
     def forward(self, graph, attention_base):
         ## attention forward
         # result = self.conv1(graph, attention_base)
-        if self.layer_size != 0:
-            x = F.elu(self.conv1(graph, attention_base) + graph)
-        else:
-            x = self.conv1(graph, attention_base) + graph
-        # x = self.conv2(x_1, attention_base) + x_1
+        x = F.elu(self.conv1(graph, attention_base) + graph)
+        # else:
+        #     x = self.conv1(graph, attention_base) + graph
 
+        # x = self.conv2(x_1, attention_base) + x_1
+        # if self.layer_size > 0:
         for i, layer in enumerate(self.convs):
-            if i != len(self.convs)-1:
-                x = F.elu(layer(x, attention_base) + x)
-            else:
-                x = layer(x, attention_base) + x
+            # if i != len(self.convs)-1:
+            x = F.elu(layer(x, attention_base) + x)
+            # else:
+            #     x = layer(x, attention_base) + x
         return x
         # print(f'result shape: {result.shape}')
         # result1 = F.elu(result)
@@ -71,19 +82,19 @@ class ATGCNN(nn.Module):
         self.feat_update_group = cfg.config['model']['output_adjust'].get('feat_update_group', 1)
         self.res_group = cfg.config['model']['output_adjust'].get('res_group', False)
         self.heads = cfg.config['model']['output_adjust']['heads']
-        self.final_head = cfg.config['model']['output_adjust']['final_head']
+        # self.final_head = cfg.config['model']['output_adjust']['final_head']
         self.hidden_size = cfg.config['model']['output_adjust']['hidden_size']
         self.layer_size = cfg.config['model']['output_adjust']['layer_size']
         self.dropout = cfg.config['model']['output_adjust']['dropout']
-        self.final_dropout = cfg.config['model']['output_adjust']['final_dropout']
+        # self.final_dropout = cfg.config['model']['output_adjust']['final_dropout']
 
 
         print(f'heads: {self.heads}')
-        print(f'final_head: {self.final_head}')
+        # print(f'final_head: {self.final_head}')
         print(f'hidden_size: {self.hidden_size}')
         print(f'layer_size: {self.layer_size}')
         print(f'dropout: {self.dropout}')
-        print(f'final_dropout: {self.final_dropout}')
+        # print(f'final_dropout: {self.final_dropout}')
         print(f'feature_dim: {feature_dim}')
         print(f'feat_update_step: {self.feat_update_step}')
         # print(f'wandb config: {wandb.config}')
@@ -139,7 +150,7 @@ class ATGCNN(nn.Module):
             # self.gcn_collect_feat = nn.ModuleList([
             #     _GraphConvolutionLayer_Collect(feature_dim, feature_dim) for i in range(self.feat_update_group)])
             self.gcn_collect_feat = Collection_Unit_wAttention(feature_dim, feature_dim, self.hidden_size, self.layer_size,
-                                                               self.heads, self.final_head, self.dropout, self.final_dropout)
+                                                               self.heads, self.dropout)
 
         # feature to output (from Total3D object_detection)
         # branch to predict the size
