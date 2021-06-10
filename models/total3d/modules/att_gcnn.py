@@ -9,24 +9,59 @@ import torch.nn.functional as F
 from net_utils.libs import get_bdb_form_from_corners, recover_points_to_world_sys, \
     get_rotation_matix_result, get_bdb_3d_result, recover_points_to_obj_sys
 from torch_geometric.nn.conv import GATConv
+import wandb
 
 
 class Collection_Unit_wAttention(nn.Module):
-    def __init__(self, dim_in, dim_out):
+    def __init__(self, dim_in,dim_out, hidden_size, layer_size, heads, dropout):
         super(Collection_Unit_wAttention, self).__init__()
-        self.conv1 = GATConv(dim_in, dim_out//4, heads=4, dropout=0.2)
-        self.conv2 = GATConv(dim_out, dim_out//4, heads=4, dropout=0.2)
+        self.layer_size = layer_size
+
+        self.convs = nn.ModuleList()
+        # if layer_size != 0:
+        #     self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
+        # else:
+        #     self.conv1 = GATConv(dim_in, dim_out, heads=heads, concat=False, dropout=dropout)
+        # for layer in range(layer_size):
+        #     if layer != layer_size - 1:
+        #         self.convs.append(
+        #             GATConv(hidden_size * heads, hidden_size, heads=heads, dropout=dropout)
+        #         )
+        #     else:
+        #         self.convs.append(
+        #             GATConv(hidden_size * heads, dim_out, heads=final_head, concat=False, dropout=final_dropout)
+        #         )
+
+        if layer_size > 0:
+            self.conv1 = GATConv(dim_in, hidden_size//heads, heads=heads, dropout=dropout)
+            for layer in range(layer_size):
+                if layer != layer_size - 1:
+                    self.convs.append(
+                        GATConv(hidden_size, hidden_size//heads, heads=heads, dropout=dropout))
+                else:
+                    self.convs.append(
+                        GATConv(hidden_size, dim_out//heads, heads=heads, dropout=dropout))
+        else:
+            self.conv1 = GATConv(dim_in, dim_out // heads, heads=heads, dropout=dropout)
 
     def forward(self, graph, attention_base):
         ## attention forward
         # result = self.conv1(graph, attention_base)
-        x_1 = F.elu(self.conv1(graph, attention_base) + graph)
-        x = F.elu(self.conv2(x_1, attention_base) + x_1)
+        x = F.elu(self.conv1(graph, attention_base) + graph)
+        # else:
+        #     x = self.conv1(graph, attention_base) + graph
+
+        # x = self.conv2(x_1, attention_base) + x_1
+        # if self.layer_size > 0:
+        for i, layer in enumerate(self.convs):
+            # if i != len(self.convs)-1:
+            x = F.elu(layer(x, attention_base) + x)
+            # else:
+            #     x = layer(x, attention_base) + x
+        return x
         # print(f'result shape: {result.shape}')
         # result1 = F.elu(result)
         # result = self.conv2(result1, attention_base)
-        return x
-
 
 @MODULES.register_module
 class ATGCNN(nn.Module):
@@ -46,6 +81,10 @@ class ATGCNN(nn.Module):
         self.res_output = cfg.config['model']['output_adjust'].get('res_output', False)
         self.feat_update_group = cfg.config['model']['output_adjust'].get('feat_update_group', 1)
         self.res_group = cfg.config['model']['output_adjust'].get('res_group', False)
+        self.heads = cfg.config['model']['output_adjust']['heads']
+        self.hidden_size = cfg.config['model']['output_adjust']['hidden_size']
+        self.layer_size = cfg.config['model']['output_adjust']['layer_size']
+        self.dropout = cfg.config['model']['output_adjust']['dropout']
 
         self.feature_length = {
             'size_cls': len(NYU40CLASSES), 'cls_codes': pix3d_n_classes,
@@ -97,7 +136,8 @@ class ATGCNN(nn.Module):
         if self.feat_update_step > 0:
             # self.gcn_collect_feat = nn.ModuleList([
             #     _GraphConvolutionLayer_Collect(feature_dim, feature_dim) for i in range(self.feat_update_group)])
-            self.gcn_collect_feat = Collection_Unit_wAttention(feature_dim, feature_dim)
+            self.gcn_collect_feat = Collection_Unit_wAttention(feature_dim, feature_dim, self.hidden_size, self.layer_size,
+                                                               self.heads, self.dropout)
 
         # feature to output (from Total3D object_detection)
         # branch to predict the size
