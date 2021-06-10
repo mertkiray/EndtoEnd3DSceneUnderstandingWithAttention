@@ -96,7 +96,7 @@ def train(cfg, trainer, scheduler, checkpoint, train_loader, val_loader):
         else:
             raise NotImplementedError
         loss = {f'test_{k}': v.avg for k, v in eval_loss_recorder.items()}
-        wandb.log({"sweep_loss", eval_loss})
+        wandb.log({"sweep_loss": eval_loss})
         wandb.log(loss, step=step)
         wandb.log({f'lr{i}': g['lr'] for i, g in enumerate(trainer.optimizer.param_groups)}, step=step)
         wandb.log({'epoch': epoch + 1}, step=step)

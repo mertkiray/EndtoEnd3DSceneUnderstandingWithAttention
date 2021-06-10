@@ -33,14 +33,14 @@ class Collection_Unit_wAttention(nn.Module):
         #         )
 
         if layer_size > 0:
-            self.conv1 = GATConv(dim_in, hidden_size, heads=heads, dropout=dropout)
+            self.conv1 = GATConv(dim_in, hidden_size//heads, heads=heads, dropout=dropout)
             for layer in range(layer_size):
                 if layer != layer_size - 1:
                     self.convs.append(
-                        GATConv(hidden_size * heads, hidden_size, heads=heads, dropout=dropout))
+                        GATConv(hidden_size, hidden_size//heads, heads=heads, dropout=dropout))
                 else:
                     self.convs.append(
-                        GATConv(hidden_size * heads, dim_out, heads=heads, dropout=dropout))
+                        GATConv(hidden_size, dim_out//heads, heads=heads, dropout=dropout))
         else:
             self.conv1 = GATConv(dim_in, dim_out // heads, heads=heads, dropout=dropout)
 
@@ -82,22 +82,9 @@ class ATGCNN(nn.Module):
         self.feat_update_group = cfg.config['model']['output_adjust'].get('feat_update_group', 1)
         self.res_group = cfg.config['model']['output_adjust'].get('res_group', False)
         self.heads = cfg.config['model']['output_adjust']['heads']
-        # self.final_head = cfg.config['model']['output_adjust']['final_head']
         self.hidden_size = cfg.config['model']['output_adjust']['hidden_size']
         self.layer_size = cfg.config['model']['output_adjust']['layer_size']
         self.dropout = cfg.config['model']['output_adjust']['dropout']
-        # self.final_dropout = cfg.config['model']['output_adjust']['final_dropout']
-
-
-        print(f'heads: {self.heads}')
-        # print(f'final_head: {self.final_head}')
-        print(f'hidden_size: {self.hidden_size}')
-        print(f'layer_size: {self.layer_size}')
-        print(f'dropout: {self.dropout}')
-        # print(f'final_dropout: {self.final_dropout}')
-        print(f'feature_dim: {feature_dim}')
-        print(f'feat_update_step: {self.feat_update_step}')
-        # print(f'wandb config: {wandb.config}')
 
         self.feature_length = {
             'size_cls': len(NYU40CLASSES), 'cls_codes': pix3d_n_classes,
