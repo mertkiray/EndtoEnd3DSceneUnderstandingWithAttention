@@ -57,11 +57,12 @@ model:
     method: ATGCNN
     loss: Null
     feature_dim: 512
+    hidden_size: 512
     feat_update_step: 1
     heads: 4
-    hidden_size: 512
     layer_size: 2
     dropout: 0.2
+    use_norm: True
     res_output: True
     lo_features: ['pitch_reg_result', 'roll_reg_result', 'pitch_cls_result',
                   'roll_cls_result', 'lo_ori_reg_result', 'lo_ori_cls_result',
