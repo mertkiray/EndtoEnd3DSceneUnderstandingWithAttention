@@ -351,10 +351,7 @@ class TransformerNetwork(nn.Module):
         num_obj = x_obj.shape[0]
         num_lo = x_lo.shape[0]
         #num_pred = x_pred.shape[0]
-        print('in forward')
-        print(x_obj.shape)
-        print(x_pred.shape)
-        print(x_lo.shape)
+
         x_obj_lo = torch.cat((x_obj, x_lo), dim=0).unsqueeze(dim=0)
         x_pred = torch.unsqueeze(x_pred, dim=0)
         print(x_obj_lo.shape)
