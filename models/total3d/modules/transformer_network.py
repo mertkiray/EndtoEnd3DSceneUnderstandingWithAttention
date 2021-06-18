@@ -354,7 +354,7 @@ class TransformerNetwork(nn.Module):
 
         x_obj_lo = torch.cat((x_obj, x_lo), dim=0).unsqueeze(dim=0)
         x_pred = torch.unsqueeze(x_pred, dim=0)
-        print(x_obj_lo.shape)
+
         query, att1, att2 = self.transformer(x_obj_lo, x_pred)
         query = torch.squeeze(query, dim=0)
         att1 = torch.squeeze(att1, dim=0)
