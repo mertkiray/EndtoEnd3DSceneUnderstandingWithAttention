@@ -4,5 +4,8 @@ from .layout_estimation import PoseNet
 from .object_detection import Bdb3DNet
 from .mesh_reconstruction import DensTMNet
 from .gcnn import GCNN
+from .transformer import TransformerDecoderLayer
+from .multi_head_attention import MultiheadAttention
+from .transformer_network import TransformerNetwork
 
-__all__ = ['TOTAL3D', 'PoseNet', 'Bdb3DNet', 'DensTMNet', 'GCNN', 'ATGCNN']
+__all__ = ['TOTAL3D', 'PoseNet', 'Bdb3DNet', 'DensTMNet', 'GCNN', 'ATGCNN', 'TransformerNetwork']
