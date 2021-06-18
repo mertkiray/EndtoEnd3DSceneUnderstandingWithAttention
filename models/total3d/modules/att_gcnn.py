@@ -8,8 +8,8 @@ from configs.data_config import NYU40CLASSES, pix3d_n_classes
 import torch.nn.functional as F
 from net_utils.libs import get_bdb_form_from_corners, recover_points_to_world_sys, \
     get_rotation_matix_result, get_bdb_3d_result, recover_points_to_obj_sys
-from torch_geometric.nn.conv import GATConv
-from torch_geometric.nn.norm import GraphNorm
+from torch_geometric.nn.conv import GATv2Conv
+from torch_geometric.nn.norm import LayerNorm
 
 class Collection_Unit_wAttention(nn.Module):
     def __init__(self, dim_in,dim_out, hidden_size, layer_size, heads, dropout, use_norm=False):
@@ -35,33 +35,34 @@ class Collection_Unit_wAttention(nn.Module):
         #         )
 
         if layer_size > 0:
-            self.conv1 = GATConv(dim_in, hidden_size//heads, heads=heads, dropout=dropout)
+            self.conv1 = GATv2Conv(dim_in, hidden_size//heads, heads=heads, dropout=dropout)
             if use_norm:
-                self.norm1 = GraphNorm(hidden_size)
+                self.norm1 = LayerNorm(hidden_size)
             for layer in range(layer_size):
                 if layer != layer_size - 1:
                     self.convs.append(
-                        GATConv(hidden_size, hidden_size//heads, heads=heads, dropout=dropout))
+                        GATv2Conv(hidden_size, hidden_size//heads, heads=heads, dropout=dropout))
                     if use_norm:
                         self.norms.append(
-                            GraphNorm(hidden_size))
+                            LayerNorm(hidden_size))
                 else:
                     self.convs.append(
-                        GATConv(hidden_size, dim_out//heads, heads=heads, dropout=dropout))
+                        GATv2Conv(hidden_size, dim_out//heads, heads=heads, dropout=dropout))
                     if use_norm:
                         self.norms.append(
-                            GraphNorm(dim_out))
+                            LayerNorm(dim_out))
         else:
-            self.conv1 = GATConv(dim_in, dim_out // heads, heads=heads, dropout=dropout)
+            self.conv1 = GATv2Conv(dim_in, dim_out // heads, heads=heads, dropout=dropout)
             if use_norm:
-                self.norm1 = GraphNorm(dim_out)
+                self.norm1 = LayerNorm(dim_out)
 
     def forward(self, graph, attention_base):
         ## attention forward
         # result = self.conv1(graph, attention_base)
-        x = self.conv1(graph, attention_base) + graph
+        x = self.conv1(graph, attention_base)
         if self.use_norm:
             x = self.norm1(x)
+        x = x + graph
         x = F.elu(x)
         # else:
         #     x = self.conv1(graph, attention_base) + graph
@@ -70,10 +71,11 @@ class Collection_Unit_wAttention(nn.Module):
         # if self.layer_size > 0:
         for i, layer in enumerate(self.convs):
             # if i != len(self.convs)-1:
-            x = layer(x, attention_base) + x
+            x_intermediate = layer(x, attention_base)
             if self.use_norm:
-                x = self.norms[i](x)
-            x = F.elu(x)
+                x_intermediate = self.norms[i](x_intermediate)
+            x_intermediate = x_intermediate + x
+            x = F.elu(x_intermediate)
             # else:
             #     x = layer(x, attention_base) + x
         return x
