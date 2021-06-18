@@ -59,8 +59,8 @@ model:
     feature_dim: 512
     hidden_size: 512
     feat_update_step: 1
-    heads: 1
-    layer_size: 1
+    heads: 8
+    layer_size: 6
     dropout: 0.2
     use_norm: True
     res_output: True

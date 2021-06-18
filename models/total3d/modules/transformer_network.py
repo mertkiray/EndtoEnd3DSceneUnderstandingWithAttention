@@ -94,7 +94,12 @@ class TransformerNetwork(nn.Module):
             nn.Linear(feature_dim, feature_dim),
         )
 
-        self.transformer = TransformerDecoderLayer(feature_dim, self.heads, feature_dim, self.dropout, activation='relu')
+        # Transformer decoder layers
+        self.transformer = nn.ModuleList()
+        for i in range(self.layer_size):
+            self.transformer.append(
+                TransformerDecoderLayer(feature_dim, self.heads, feature_dim, self.dropout, activation='relu')
+                )
 
         # feature to output (from Total3D object_detection)
         # branch to predict the size
@@ -355,7 +360,10 @@ class TransformerNetwork(nn.Module):
         x_obj_lo = torch.cat((x_obj, x_lo), dim=0).unsqueeze(dim=0)
         x_pred = torch.unsqueeze(x_pred, dim=0)
 
-        query, att1, att2 = self.transformer(x_obj_lo, x_pred)
+        #query, att1, att2 = self.transformer(x_obj_lo, x_pred)
+        query = x_obj_lo
+        for i in range(self.layer_size):
+            query, att1, att2 = self.transformer[i](query, x_pred)
         query = torch.squeeze(query, dim=0)
         att1 = torch.squeeze(att1, dim=0)
         att2 = torch.squeeze(att2, dim=0)
