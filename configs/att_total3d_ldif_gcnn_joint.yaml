@@ -1,9 +1,7 @@
 method: TOTAL3D
 resume: False
 finetune: True
-weight: ['out/pretrained_models/total3d/model_best.pth',
-         'out/layout_estimation/21060322382343/model_best.pth',
-         'out/ldif/21060322485415/model_best.pth']
+weight: ['out/total3d/att/21060517372514/model_best.pth']
 seed: 123
 device:
   use_gpu: True
@@ -34,7 +32,7 @@ loss_weights:
   phy_loss: 0.75
   bdb2D_loss: 0.75
   corner_loss: 0.75
-  ldif_phy_loss: 0.0
+  ldif_phy_loss: 20.0
 model:
   layout_estimation:
     method: PoseNet
@@ -52,17 +50,20 @@ model:
     object_samples: 512
     loss_settings:
       scale_before_func: 100.0
+      phy_loss_samples: 128
+      phy_loss_objects: 4
+      surface_optimize: True
       type: classmse
   output_adjust:
-    method: TransformerNetwork
+    method: ATGCNN
     loss: Null
     feature_dim: 512
     hidden_size: 512
-    feat_update_step: 1
-    heads: 8
-    layer_size: 6
-    dropout: 0.2
-    use_norm: True
+    feat_update_step: 8
+    heads: 16
+    layer_size: 2
+    dropout: 0.3
+    use_norm: False
     res_output: True
     lo_features: ['pitch_reg_result', 'roll_reg_result', 'pitch_cls_result',
                   'roll_cls_result', 'lo_ori_reg_result', 'lo_ori_cls_result',
@@ -85,11 +86,11 @@ scheduler:
 train:
   epochs: 30
   phase: 'joint' # 'layout_estimation' or 'object_detection' or 'joint'.
-  freeze: ['layout_estimation', 'object_detection', 'mesh_reconstruction']
+  freeze: ['mesh_reconstruction']
   batch_size: 2
 val:
   phase: 'joint'
-  batch_size: 2
+  batch_size: 1
 test:
   phase: 'joint'
   batch_size: 1
@@ -100,4 +101,8 @@ log:
   save_results: True
   vis_step: 100
   print_step: 50
-  path: out/total3d/trans
+  path: out/total3d/att
+
+
+
+
