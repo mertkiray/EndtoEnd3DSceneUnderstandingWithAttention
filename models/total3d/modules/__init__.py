@@ -7,5 +7,7 @@ from .gcnn import GCNN
 from .transformer import TransformerDecoderLayer
 from .multi_head_attention import MultiheadAttention
 from .transformer_network import TransformerNetwork
+from .transformer_enc_dec import TransformerEncDec
+from .positional_encoding import PositionalEncoding1D
 
-__all__ = ['TOTAL3D', 'PoseNet', 'Bdb3DNet', 'DensTMNet', 'GCNN', 'ATGCNN', 'TransformerNetwork']
+__all__ = ['TOTAL3D', 'PoseNet', 'Bdb3DNet', 'DensTMNet', 'GCNN', 'ATGCNN', 'TransformerNetwork', 'TransformerEncDec']
