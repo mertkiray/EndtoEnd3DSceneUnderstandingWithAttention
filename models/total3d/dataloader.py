@@ -96,15 +96,17 @@ class Total3D_Dataset(SUNRGBD):
         patch = []
         for bdb in boxes['bdb2D_pos']:
             img = image.crop((bdb[0], bdb[1], bdb[2], bdb[3]))
-            img = self.data_transforms(img)
-            patch.append(img)
+            img_temp = img.copy()
+            img_temp = self.data_transforms(img_temp)
+            patch.append(img_temp)
         boxes['patch'] = torch.stack(patch)
-        image = data_transforms_nocrop(image)
+        img_tem = image.copy()
+        img_tem = data_transforms_nocrop(img_tem)
         if self.mode != 'test':
             for d, k in zip([camera, layout, boxes], ['world_R_inv', 'lo_inv', 'bdb3d_inv']):
                 if k in d.keys():
                     d.pop(k)
-        return {'image':image, 'depth': pil2tensor(depth).squeeze(), 'boxes_batch':boxes, 'camera':camera, 'layout':layout, 'sequence_id': sequence['sequence_id']}
+        return {'image':img_tem, 'depth': pil2tensor(depth).squeeze(), 'boxes_batch':boxes, 'camera':camera, 'layout':layout, 'sequence_id': sequence['sequence_id']}
 
 def recursive_convert_to_torch(elem):
     if torch.is_tensor(elem):

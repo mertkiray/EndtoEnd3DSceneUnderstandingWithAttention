@@ -48,7 +48,8 @@ class LDIF_Dataset(PIX3DLDIF):
 
         image = np.load(sample_info['img_path'])
         image = Image.fromarray(image)
-        sample['img'] = self.data_transforms(image)
+        image_temp = image.copy()
+        sample['img'] = self.data_transforms(image_temp)
 
         cls_codes = torch.zeros(pix3d_n_classes)
         cls_codes[sample_info['class_id']] = 1

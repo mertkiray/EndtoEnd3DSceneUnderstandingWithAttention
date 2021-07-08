@@ -63,8 +63,9 @@ class MGNet_Dataset(PIX3D):
             gt_points = gt_points[p_ids, :]
             densities = densities[p_ids]
 
+        image_temp = image.copy()
         sample = {'sequence_id':sequence['sample_id'],
-                  'img':data_transforms(image),
+                  'img':data_transforms(image_temp),
                   'cls':cls_codes,
                   'mesh_points':gt_points,
                   'densities': densities}
