@@ -2,8 +2,8 @@ method: TOTAL3D
 resume: False
 finetune: True
 weight: ['out/pretrained_models/total3d/model_best.pth',
-         'out/layout_estimation/21060322382343/model_best.pth',
-         'out/ldif/21060322485415/model_best.pth']
+         'out/layout_estimation/21062413393071/model_best.pth',
+         'out/ldif/20101613380518/model_best.pth']
 seed: 123
 device:
   use_gpu: True
@@ -58,10 +58,10 @@ model:
     loss: Null
     feature_dim: 512
     hidden_size: 512
-    feat_update_step: 8
-    heads: 16
-    layer_size: 2
-    dropout: 0.3
+    feat_update_step: 1
+    heads: 8
+    layer_size: 1
+    dropout: 0.1
     use_norm: False
     res_output: True
     lo_features: ['pitch_reg_result', 'roll_reg_result', 'pitch_cls_result',
@@ -83,7 +83,7 @@ scheduler:
   patience: 3
   threshold: 1e-4
 train:
-  epochs: 30
+  epochs: 45
   phase: 'joint' # 'layout_estimation' or 'object_detection' or 'joint'.
   freeze: ['layout_estimation', 'object_detection', 'mesh_reconstruction']
   batch_size: 2

@@ -2,7 +2,7 @@ clc;
 clear all;
 
 old_SUNRGBD_path = '/home/siyuan/Documents/Dataset/SUNRGBD_ALL/SUNRGBD';
-SUNRGBD_path = '/home/zhangcheng/datasets/SUNRGBD/SUNRGBD';
+SUNRGBD_path = '/home/ubuntu/adl4cv/EndtoEnd3DSceneUnderstandingWithAttention/sunrgbd/Dataset/SUNRGBD';
 toolboxpath = '../../evaluation/SUNRGBDtoolbox';
 addpath(genpath(toolboxpath));
 load(fullfile(toolboxpath,'/traintestSUNRGBD/allsplit.mat'));
@@ -25,7 +25,7 @@ disp_cls = {'cabinet', 'bed', 'chair', 'sofa', 'table', 'door', ...
     'person', 'night_stand', 'toilet', 'sink', 'lamp', 'bathtub', ...
     'bag'};
 thresh_iou = [0.01,0.05:0.05:0.6,0.8:0.2:1];
-result_path = '/home/zhangcheng/projects/sdf_seg/src/Total3DUnderstanding/out/total3d/20111223070510/visualization';
+result_path = '/home/ubuntu/adl4cv/EndtoEnd3DSceneUnderstandingWithAttention/out/total3d/trans_enc_dec/21070305183351/visualization';
 vis = false;
 
 %% evaluation

@@ -2,8 +2,8 @@ method: TOTAL3D
 resume: False
 finetune: True
 weight: ['out/pretrained_models/total3d/model_best.pth',
-         'out/layout_estimation/21051514401081/model_best.pth',
-         'out/ldif/21051514441884/model_best.pth']
+         'out/layout_estimation/21062413393071/model_best.pth',
+         'out/ldif/20101613380518/model_best.pth']
 seed: 123
 device:
   use_gpu: True
@@ -57,10 +57,10 @@ model:
     method: TransformerEncDec
     loss: Null
     feature_dim: 512
-    hidden_size: 512
+    hidden_size: 1024
     feat_update_step: 1
     heads: 8
-    layer_size: 6
+    layer_size: 2
     dropout: 0.2
     use_norm: True
     res_output: True
@@ -79,11 +79,12 @@ optimizer:
   eps: 1e-08
   weight_decay: 1e-04
 scheduler:
-  method: MultiStepLR
-  milestones: [100, 100, 100]
-  gamma: 0.5
+  method: ReduceLROnPlateau
+  factor: 0.5
+  patience: 3
+  threshold: 1e-4
 train:
-  epochs: 1
+  epochs: 45
   phase: 'joint' # 'layout_estimation' or 'object_detection' or 'joint'.
   freeze: ['layout_estimation', 'object_detection', 'mesh_reconstruction']
   batch_size: 2

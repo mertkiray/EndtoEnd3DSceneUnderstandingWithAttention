@@ -1,7 +1,7 @@
 method: TOTAL3D
 resume: False
 finetune: True
-weight: ['out/total3d/trans/21060517372514/model_best.pth']
+weight: ['out/total3d/transformer_enc_dec/21060517372514/model_best.pth']
 seed: 123
 device:
   use_gpu: True
@@ -58,10 +58,10 @@ model:
     method: TransformerEncDec
     loss: Null
     feature_dim: 512
-    hidden_size: 512
+    hidden_size: 1024
     feat_update_step: 1
     heads: 8
-    layer_size: 6
+    layer_size: 2
     dropout: 0.2
     use_norm: True
     res_output: True
@@ -85,7 +85,7 @@ scheduler:
   patience: 3
   threshold: 1e-4
 train:
-  epochs: 30
+  epochs: 45
   phase: 'joint' # 'layout_estimation' or 'object_detection' or 'joint'.
   freeze: ['mesh_reconstruction']
   batch_size: 2

@@ -1,14 +1,20 @@
 # End-to-end Holistic 3D Scene Understanding with Attention
 
-Mert Kiray*, Halil Eralp Kocas*, Yinda Zhang*, Yinyu Nie
+Mert Kiray*, Halil Eralp Kocas*, Yinyu Nie
 
 ## Introduction
 
-This repo contains training, testing, evaluation, visualization code of our project.
+This repo contains training, testing, evaluation, and visualization code of our project End-to-end Holistic 3D Scene Understanding with Attention.
+Our proposed architectures are GAT, Decoder only, and Complete Transformer to replace SGCN from [Holistic3D](https://github.com/chengzhag/Implicit3DUnderstanding).
 
+If you encounter any issues running this repo, please email: 
+```
+mert.kiray@tum.de or halileralp.kocas@tum.de
+```
 ## CUDA Adaptation
 
-Please make sure you adapt the compatible gencode for CUDA_NVCC_FLAGS under external/mesh_fusion/libfusiongpu/CMakeLists.txt, lines 38 and 39.
+Please make sure you adapt the compatible gencode for CUDA_NVCC_FLAGS under ```external/mesh_fusion/libfusiongpu/CMakeLists.txt```
+and ```external/ldif/ldif2mesh/build.sh```  according to your CUDA version and GPU architecture.
 
 ## Install
 
@@ -24,15 +30,15 @@ If not, please reach your administrator for installation of [these libraries](ht
 
 
 ## Data preparation
-We follow [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to use [SUN-RGBD](https://rgbd.cs.princeton.edu/) to train our Scene Graph Convolutional Network (SGCN), and use [Pix3D](http://pix3d.csail.mit.edu/) to train our Local Implicit Embedding Network
+We follow [Holistic3D](https://github.com/chengzhag/Implicit3DUnderstanding) to use [SUN-RGBD](https://rgbd.cs.princeton.edu/) to train our GAT, Decoder only Transformer, Complete Transformer architectures and use [Pix3D](http://pix3d.csail.mit.edu/) to train Holistic3D's Local Implicit Embedding Network
 (LIEN) with [Local Deep Implicit Functions](https://github.com/google/ldif) (LDIF) decoder.
 
 #### Preprocess SUN-RGBD data
 
 Please follow [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to directly download the processed train/test data.
 
-In case you prefer processing by yourself or want to evaluate 3D detection with our code
-(To ultilize the evaluation code of [Coop](https://github.com/thusiyuan/cooperative_scene_parsing), we modified the data processing code of Total3DUnderstanding to save parameters for transforming the coordinate system from Total3D back to Coop),
+In case you prefer processing by yourself or want to evaluate 3D detection
+(To ultilize the evaluation code of [Coop](https://github.com/thusiyuan/cooperative_scene_parsing), Holistic3D modified the data processing code of Total3DUnderstanding to save parameters for transforming the coordinate system from Total3D back to Coop),
 please follow these steps:
 
 1. Follow [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to download the raw data.
@@ -48,7 +54,7 @@ Please find ```{"name":""propulsion"tool"}``` in ```data/sunrgbd/Dataset/SUNRGBD
     ```
 
 #### Preprocess Pix3D data
-We use a different data process pipeline with [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding). Please follow these steps to generate the train/test data:
+Please follow these steps to generate the train/test data:
 
 1. Download the [Pix3D dataset](http://pix3d.csail.mit.edu/) to ```data/pix3d/metadata```
 
@@ -63,8 +69,8 @@ We use [wandb](https://www.wandb.com/) for logging and visualization.
 You can register a wandb account and login before training by ```wandb login```.
 In case you don't need to visualize the training process, you can put ```WANDB_MODE=dryrun``` before the commands bellow.
 
-Thanks to the well-structured code of [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding), we use the same method to manage parameters of each experiment with configuration files (```configs/****.yaml```).
-We first follow [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to pretrain each individual module, then jointly finetune the full model with additional physical violation loss.
+We manage parameters of each experiment with configuration files (```configs/****.yaml```).
+We first follow [Holistic3D](https://github.com/chengzhag/Implicit3DUnderstanding) to pretrain each individual module, then jointly finetune the full model with additional physical violation loss.
 
 #### Pretraining of Initial Estimation Stage
 We use the [pretrained checkpoint](https://livebournemouthac-my.sharepoint.com/:u:/g/personal/ynie_bournemouth_ac_uk/EWuyQXemB25Gq5ssOZfFKyQBA7w2URXR3HLvjJiKkChaiA?e=0Zk9n0) of [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to load weights for ODN.
@@ -73,81 +79,130 @@ Other modules can be trained then tested with the following steps:
 
 1. Train LEN by:
     ```
-    python main.py configs/layout_estimation.yaml
+    python main.py --config configs/layout_estimation.yaml
     ```
     The pretrained checkpoint can be found at ```out/layout_estimation/[start_time]/model_best.pth```
     
 2. Train LIEN + LDIF by:
     ```
-    python main.py configs/ldif.yaml
+    python main.py --config configs/ldif.yaml
     ```
     The pretrained checkpoint can be found at ```out/ldif/[start_time]/model_best.pth```
     (alternatively, you can download the pretrained model [here](https://stduestceducn-my.sharepoint.com/:u:/g/personal/2015010912010_std_uestc_edu_cn/EQj2e3Utbg1HnkNh1e6YslABTml0R8Eng5-X3ic5jD2LFA?e=2vreNA), and unzip it into out/ldif/20101613380518/)
     
     The training process is followed with a quick test without ICP and Chamfer distance evaluated. In case you want to align mesh and evaluate the Chamfer distance during testing:
     ```
-    python main.py configs/ldif.yaml --mode train
+    python main.py --config configs/ldif.yaml --mode train
     ```
     The generated object meshes can be found at ```out/ldif/[start_time]/visualization```
 
-## Training of Refinement Stage
 
+   ##Training of Holistic3D
 1. Replace the checkpoint directories of LEN and LIEN in ```configs/total3d_ldif_gcnn.yaml``` with the checkpoints trained above, then train SGCN by:
     ```
-    python main.py configs/total3d_ldif_gcnn.yaml
+    python main.py --config configs/total3d_ldif_gcnn.yaml
     ```
     The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
 
-So that you can train our baseline.
 
-2. Replace the checkpoint directories of LEN and LIEN in ```...``` with the checkpoints trained above, then train GAT network by:
+2. Replace the checkpoint directory in ```configs/total3d_ldif_gcnn_joint.yaml``` with the one trained in the last step above, then train the full model by:
     ```
-    python main.py configs/....yaml
-    ```
-    The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
-
-So that you can train our GAT network.
-
-3. Replace the checkpoint directories of LEN and LIEN in ```...``` with the checkpoints trained above, then train Decoder-Only Transformer by:
-    ```
-    python main.py configs/....yaml
-    ```
-    The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
-
-So that you can train our Decoder-Only Transformer network.
-
-4. Replace the checkpoint directories of LEN and LIEN in ```...``` with the checkpoints trained above, then train fully-implemented Transformer by:
-    ```
-    python main.py configs/....yaml
-    ```
-    The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
-
-So that you can train our fully-implemented Transformer network.
-
-
-#### Joint finetune (Final Step of Training)
-
-1. Replace the checkpoint directory in ```configs/total3d_ldif_gcnn_joint.yaml``` with the one trained in the last step above, then train the full model by:
-    ```
-    python main.py configs/total3d_ldif_gcnn_joint.yaml
+    python main.py --config configs/total3d_ldif_gcnn_joint.yaml
     ```
     The trained model can be found at ```out/total3d/[start_time]/model_best.pth```
     
-2. The training process is followed with a quick test without scene mesh generated. In case you want to generate the scene mesh during testing (which will cost a day on 1080ti due to the unoptimized interface of LDIF CUDA kernel):
+3. The training process is followed with a quick test without scene mesh generated. In case you want to generate the scene mesh during testing (which will cost a day on 1080ti due to the unoptimized interface of LDIF CUDA kernel):
     ```
-    python main.py configs/total3d_ldif_gcnn_joint.yaml --mode train
+    python main.py --config configs/total3d_ldif_gcnn_joint.yaml --mode train
     ```
     The testing resaults can be found at ```out/total3d/[start_time]/visualization```
+
+##Training of Graph Attention Network
+
+1. Replace the checkpoint directories of LEN and LIEN in ```configs/att_total3d_ldif_gcnn.yaml``` with the checkpoints trained above, then train SGCN by:
+    ```
+    python main.py --config configs/att_total3d_ldif_gcnn.yaml
+    ```
+    The pretrained checkpoint can be found at ```out/total3d/att/[start_time]/model_best.pth```
+
+
+2. Replace the checkpoint directory in ```configs/att_total3d_ldif_gcnn_joint.yaml``` with the one trained in the last step above, then train the full model by:
+    ```
+    python main.py --config configs/att_total3d_ldif_gcnn_joint.yaml
+    ```
+    The trained model can be found at ```out/total3d/att/[start_time]/model_best.pth```
+    
+3. The training process is followed with a quick test without scene mesh generated. In case you want to generate the scene mesh during testing (which will cost a day on 1080ti due to the unoptimized interface of LDIF CUDA kernel):
+    ```
+    python main.py --config configs/att_total3d_ldif_gcnn_joint.yaml --mode train
+    ```
+    The testing results can be found at ```out/total3d/att/[start_time]/visualization```
+
+##Training of Decoder only Transformer
+
+1. Replace the checkpoint directories of LEN and LIEN in ```configs/transformer_total3d.yaml``` with the checkpoints trained above, then train SGCN by:
+    ```
+    python main.py --config configs/transformer_total3d.yaml
+    ```
+    The pretrained checkpoint can be found at ```out/total3d/trans/[start_time]/model_best.pth```
+
+
+2. Replace the checkpoint directory in ```configs/transformer_total3d_joint.yaml``` with the one trained in the last step above, then train the full model by:
+    ```
+    python main.py --config configs/transformer_total3d_joint.yaml
+    ```
+    The trained model can be found at ```out/total3d/trans/[start_time]/model_best.pth```
+    
+3. The training process is followed with a quick test without scene mesh generated. In case you want to generate the scene mesh during testing (which will cost a day on 1080ti due to the unoptimized interface of LDIF CUDA kernel):
+    ```
+    python main.py --config configs/transformer_total3d_joint.yaml --mode train
+    ```
+    The testing results can be found at ```out/total3d/trans/[start_time]/visualization```
+
+##Training of Complete Transformer Network
+
+1. Replace the checkpoint directories of LEN and LIEN in ```configs/transformer_enc_dec_total3d.yaml``` with the checkpoints trained above, then train SGCN by:
+    ```
+    python main.py --config configs/transformer_enc_dec_total3d.yaml
+    ```
+    The pretrained checkpoint can be found at ```out/total3d/transformer_enc_dec/[start_time]/model_best.pth```
+
+
+2. Replace the checkpoint directory in ```configs/transformer_enc_dec_total3d_joint.yaml``` with the one trained in the last step above, then train the full model by:
+    ```
+    python main.py --config configs/transformer_enc_dec_total3d_joint.yaml
+    ```
+    The trained model can be found at ```out/total3d/transformer_enc_dec/[start_time]/model_best.pth```
+    
+3. The training process is followed with a quick test without scene mesh generated. In case you want to generate the scene mesh during testing (which will cost a day on 1080ti due to the unoptimized interface of LDIF CUDA kernel):
+    ```
+    python main.py --config configs/transformer_enc_dec_total3d_joint.yaml --mode train
+    ```
+    The testing results can be found at ```out/total3d/transformer_enc_dec/[start_time]/visualization```
+
 
 #### Testing
 
 1. The training process above already include a testing process. In case you want to test LIEN+LDIF or full model by yourself:
-    ```
-    python main.py out/[ldif/total3d]/[start_time]/out_config.yaml --mode test
-    ```
-    The results will be saved to ```out/total3d/[start_time]/visualization``` and the evaluation metrics will be logged to wandb as run summary.
+   
+   * For LDIF:
+      ```
+       python main.py --config out/ldif/[start_time]/out_config.yaml --mode test
+       ```
+   * For Holistic3D:
+      ```
+       python main.py --config out/total3d/[start_time]/out_config.yaml --mode test
+      ```
+      The results will be saved to ```out/total3d/[start_time]/visualization``` and the evaluation metrics will be logged to wandb as run summary.
 
-2. Evaluate 3D object detection with our modified matlab script from [Coop](https://github.com/thusiyuan/cooperative_scene_parsing):
+   * For GAT / Decoder Only Transformer / Complete Transformer architectures:
+       ```
+      python main.py --config out/total3d/[att/trans/transformer_enc_dec]/[start_time]/out_config.yaml --mode test
+       ```
+      The results will be saved to ```out/total3d/[att/trans/transformer_enc_dec]/[start_time]/visualization``` and the evaluation metrics will be logged to wandb as run summary.
+
+
+2. Evaluate 3D object detection with modified matlab script from [Coop](https://github.com/thusiyuan/cooperative_scene_parsing):
     ```
     external/cooperative_scene_parsing/evaluation/detections/script_eval_detection.m
     ```
@@ -158,22 +213,34 @@ So that you can train our fully-implemented Transformer network.
     ```
 
 3. Visualize the i-th 3D scene interacively by
-    ```
-    python utils/visualize.py --result_path out/total3d/[start_time]/visualization --sequence_id [i]
-    ```
-    or save the 3D detection result and rendered scene mesh by
-    ```
-    python utils/visualize.py --result_path out/total3d/[start_time]/visualization --sequence_id [i] --save_path []
-    ```
-    In case you do not have a screen:
-    ```
-    python utils/visualize.py --result_path out/total3d/[start_time]/visualization --sequence_id [i] --save_path [] --offscreen
-    ```
-    If nothing goes wrong, you should get results like:
-    
-    <img src="figures/724_bbox.png" alt="camera view 3D bbox" width="20%" /> <img src="figures/724_recon.png" alt="scene reconstruction" width="20%" />
-
-4. Visualize the detection results from a third person view with our modified matlab script from [Coop](https://github.com/thusiyuan/cooperative_scene_parsing):
+   
+   * For Holistic3D:
+       ```
+       python utils/visualize.py --result_path out/total3d/[start_time]/visualization --sequence_id [i]
+       ```
+       or save the 3D detection result and rendered scene mesh by
+       ```
+       python utils/visualize.py --result_path out/total3d/[start_time]/visualization --sequence_id [i] --save_path []
+       ```
+       In case you do not have a screen:
+       ```
+       python utils/visualize.py --result_path out/total3d/[start_time]/visualization --sequence_id [i] --save_path [] --offscreen
+       ```
+   
+   * For GAT / Decoder only / Complete Transformer architectures:
+      ```
+       python utils/visualize.py --result_path out/total3d/[att/trans/transformer_enc_dec]/[start_time]/visualization --sequence_id [i]
+       ```
+       or save the 3D detection result and rendered scene mesh by
+       ```
+       python utils/visualize.py --result_path out/total3d/[att/trans/transformer_enc_dec]/[start_time]/visualization --sequence_id [i] --save_path []
+       ```
+       In case you do not have a screen:
+       ```
+       python utils/visualize.py --result_path out/total3d/[att/trans/transformer_enc_dec]/[start_time]/visualization --sequence_id [i] --save_path [] --offscreen
+       ```
+   
+4. Visualize the detection results from a third person view with modified matlab script from [Coop](https://github.com/thusiyuan/cooperative_scene_parsing):
     ```
     external/cooperative_scene_parsing/evaluation/vis/show_result.m
     ``` 
@@ -189,31 +256,11 @@ So that you can train our fully-implemented Transformer network.
     views3d = {'oblique', 'top'}; % choose prefered view
     dosave = true; % or false, please place breakpoints to interactively view the results.
     ```
-    If nothing goes wrong, you should get results like:
-    
-    <img src="figures/724_oblique_3d.png" alt="oblique view 3D bbox" width="40%" />
-
-#### About the testing speed
-
-Thanks to the simplicity of LIEN+LDIF, the pretrain takes only about 8 hours on a 1080Ti.
-However, although we used the CUDA kernel of [LDIF](https://github.com/google/ldif) to optimize the speed,
-the file-based interface of the kernel still bottlenecked the mesh reconstruction.
-This is the main reason why our method takes much more time in object and scene mesh reconstruction.
-If you want speed over mesh quality, please lower the parameter ```data.marching_cube_resolution``` in the configuration file.
 
 ## Citation
 
-If you find our work and code helpful, please consider cite:
-```
-@article{zhang2021holistic,
-  title={Holistic 3D Scene Understanding from a Single Image with Implicit Representation},
-  author={Zhang, Cheng and Cui, Zhaopeng and Zhang, Yinda and Zeng, Bing and Pollefeys, Marc and Liu, Shuaicheng},
-  journal={arXiv preprint arXiv:2103.06422},
-  year={2021}
-}
-```
-
 We thank the following great works:
+- [Holistic3D](https://github.com/chengzhag/Implicit3DUnderstanding) for their SGCN, LIEN and LDIF.
 - [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) for their well-structured code. We construct our network based on their well-structured code.
 - [Coop](https://github.com/thusiyuan/cooperative_scene_parsing) for their dataset. We used their processed dataset with 2D detector prediction.
 - [LDIF](https://github.com/google/ldif) for their novel representation method. We ported their LDIF decoder from Tensorflow to PyTorch.
@@ -222,6 +269,12 @@ We thank the following great works:
 
 If you find them helpful, please cite:
 ```
+@article{zhang2021holistic,
+  title={Holistic 3D Scene Understanding from a Single Image with Implicit Representation},
+  author={Zhang, Cheng and Cui, Zhaopeng and Zhang, Yinda and Zeng, Bing and Pollefeys, Marc and Liu, Shuaicheng},
+  journal={arXiv preprint arXiv:2103.06422},
+  year={2021}
+}
 @InProceedings{Nie_2020_CVPR,
 author = {Nie, Yinyu and Han, Xiaoguang and Guo, Shihui and Zheng, Yujian and Chang, Jian and Zhang, Jian Jun},
 title = {Total3DUnderstanding: Joint Layout, Object Pose and Mesh Reconstruction for Indoor Scenes From a Single Image},

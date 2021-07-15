@@ -1,7 +1,7 @@
 method: TOTAL3D
 resume: False
 finetune: True
-weight: ['out/total3d/21060517372514/model_best.pth']
+weight: ['out/total3d/21062503092845/model_best.pth']
 seed: 123
 device:
   use_gpu: True

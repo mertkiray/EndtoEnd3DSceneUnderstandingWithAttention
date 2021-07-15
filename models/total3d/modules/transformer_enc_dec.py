@@ -101,8 +101,8 @@ class TransformerEncDec(nn.Module):
         #     self.transformer.append(
         #         TransformerDecoderLayer(feature_dim, self.heads, feature_dim, self.dropout, activation='relu')
         #         )
-        self.transformer = nn.Transformer(nhead=self.heads, num_encoder_layers=6,
-                                          num_decoder_layers=6, dim_feedforward=2048)
+        self.transformer = nn.Transformer(nhead=self.heads, num_encoder_layers=self.layer_size,
+                                          num_decoder_layers=self.layer_size, dim_feedforward=self.hidden_size)
         self.pos_enc_src = PositionalEncoding1D(feature_dim)
         self.pos_enc_tgt = PositionalEncoding1D(feature_dim)
         # feature to output (from Total3D object_detection)
