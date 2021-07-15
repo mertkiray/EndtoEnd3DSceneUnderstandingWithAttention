@@ -18,6 +18,12 @@ and ```external/ldif/ldif2mesh/build.sh```  according to your CUDA version and G
 
 ## Install
 
+Please note that the following Python, gcc, and CUDA versions are used to compile and run this project:
+```
+Python=3.7 & gcc=8 & g++=8 & CUDA 10.2
+```
+
+
 Please make sure to install CUDA NVCC on your system first. then run the following:
 ```
 sudo apt install xvfb ninja-build freeglut3-dev libglew-dev meshlab
