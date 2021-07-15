@@ -115,7 +115,7 @@ Other modules can be trained then tested with the following steps:
     ```
     python main.py --config configs/total3d_ldif_gcnn_joint.yaml --mode train
     ```
-    The testing resaults can be found at ```out/total3d/[start_time]/visualization```
+    The testing results can be found at ```out/total3d/[start_time]/visualization```
 
 ## Training of Graph Attention Network
 
