@@ -97,7 +97,7 @@ Other modules can be trained then tested with the following steps:
     The generated object meshes can be found at ```out/ldif/[start_time]/visualization```
 
 
-   ##Training of Holistic3D
+## Training of Holistic3D
 1. Replace the checkpoint directories of LEN and LIEN in ```configs/total3d_ldif_gcnn.yaml``` with the checkpoints trained above, then train SGCN by:
     ```
     python main.py --config configs/total3d_ldif_gcnn.yaml
@@ -117,7 +117,7 @@ Other modules can be trained then tested with the following steps:
     ```
     The testing resaults can be found at ```out/total3d/[start_time]/visualization```
 
-##Training of Graph Attention Network
+## Training of Graph Attention Network
 
 1. Replace the checkpoint directories of LEN and LIEN in ```configs/att_total3d_ldif_gcnn.yaml``` with the checkpoints trained above, then train SGCN by:
     ```
@@ -138,7 +138,7 @@ Other modules can be trained then tested with the following steps:
     ```
     The testing results can be found at ```out/total3d/att/[start_time]/visualization```
 
-##Training of Decoder only Transformer
+## Training of Decoder only Transformer
 
 1. Replace the checkpoint directories of LEN and LIEN in ```configs/transformer_total3d.yaml``` with the checkpoints trained above, then train SGCN by:
     ```
@@ -159,7 +159,7 @@ Other modules can be trained then tested with the following steps:
     ```
     The testing results can be found at ```out/total3d/trans/[start_time]/visualization```
 
-##Training of Complete Transformer Network
+## Training of Complete Transformer Network
 
 1. Replace the checkpoint directories of LEN and LIEN in ```configs/transformer_enc_dec_total3d.yaml``` with the checkpoints trained above, then train SGCN by:
     ```
