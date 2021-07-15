@@ -1,53 +1,26 @@
-# Implicit3DUnderstanding (Im3D) [[Project Page]](https://chengzhag.github.io/publication/im3d/)
+# End-to-end Holistic 3D Scene Understanding with Attention
 
-### Holistic 3D Scene Understanding from a Single Image with Implicit Representation
-Cheng Zhang, Zhaopeng Cui, Yinda Zhang, Shuaicheng Liu, Bing Zeng, Marc Pollefeys
-
-<img src="demo/inputs/1/img.jpg" alt="img.jpg" width="20%" /> <img src="demo/outputs/1/3dbbox.png" alt="3dbbox.png" width="20%" /> <img src="demo/outputs/1/recon.png" alt="recon.png" width="20%" /> <br>
-<img src="demo/inputs/2/img.jpg" alt="img.jpg" width="20%" /> <img src="demo/outputs/2/3dbbox.png" alt="3dbbox.png" width="20%" /> <img src="demo/outputs/2/recon.png" alt="recon.png" width="20%" /> <br>
-<img src="demo/inputs/3/img.jpg" alt="img.jpg" width="20%" /> <img src="demo/outputs/3/3dbbox.png" alt="3dbbox.png" width="20%" /> <img src="demo/outputs/3/recon.png" alt="recon.png" width="20%" />
-
-![pipeline](figures/pipeline.png)
+Mert Kiray*, Halil Eralp Kocas*, Yinda Zhang*, Yinyu Nie
 
 ## Introduction
 
-This repo contains training, testing, evaluation, visualization code of our CVPR 2021 paper.
-Specially, the repo contains our PyTorch implementation of the decoder of [LDIF](https://github.com/google/ldif), which can be extracted and used in other projects.
-We are expecting to release a refactored version of our pipeline and a PyTorch implementation of the full LDIF model in the future. 
+This repo contains training, testing, evaluation, visualization code of our project.
 
+## CUDA Adaptation
+
+Please make sure you adapt the compatible gencode for CUDA_NVCC_FLAGS under external/mesh_fusion/libfusiongpu/CMakeLists.txt, lines 38 and 39.
 
 ## Install
 
+Please make sure to install CUDA NVCC on your system first. then run the following:
 ```
-sudo apt install xvfb ninja-build
-conda env create -f environment.yml
-conda activate Im3D
+sudo apt install xvfb ninja-build freeglut3-dev libglew-dev meshlab
+pip install -r requirements.txt
 python project.py build
 ```
-
-
-## Demo
-1. Download the [pretrained checkpoint](https://stduestceducn-my.sharepoint.com/:u:/g/personal/2015010912010_std_uestc_edu_cn/Efs2Tqlkk_pIhy16ud20m5sBMkbkWJEuspiLjdF4G2jOzA?e=sxnswk)
-and unzip it into ```out/total3d/20110611514267/```
-
-2. Change current directory to ```Implicit3DUnderstanding/``` and run the demo, which will generate 3D detection result and rendered scene mesh to ```demo/output/1/```
-    ```
-    CUDA_VISIBLE_DEVICES=0 python main.py out/total3d/20110611514267/out_config.yaml --mode demo --demo_path demo/inputs/1
-    ```
-   
-3. In case you want to run it off screen (for example, with SSH)
-    ```
-    CUDA_VISIBLE_DEVICES=0 xvfb-run -a -s "-screen 0 800x600x24" python main.py out/total3d/20110611514267/out_config.yaml --mode demo --demo_path demo/inputs/1
-    ```
-   
-4. If you want to run it interactively, change the last line of demo.py
-    ```
-    scene_box.draw3D(if_save=True, save_path = '%s/recon.png' % (save_path))
-    ```
-    to
-    ```
-    scene_box.draw3D(if_save=False, save_path = '%s/recon.png' % (save_path))
-    ```
+When running ```python project.py build```, the script will run ```external/build_gaps.sh``` which requires password for sudo privilege for ```apt-get install```.
+Please make sure you are running with a user with sudo privilege.
+If not, please reach your administrator for installation of [these libraries](https://github.com/chengzhag/Implicit3DUnderstanding/blob/af2964f074d941cd990cff81a9b5f75489586ed2/external/build_gaps.sh#L37) and comment out the corresponding lines then run ```python project.py build```.
 
 
 ## Data preparation
@@ -93,8 +66,8 @@ In case you don't need to visualize the training process, you can put ```WANDB_M
 Thanks to the well-structured code of [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding), we use the same method to manage parameters of each experiment with configuration files (```configs/****.yaml```).
 We first follow [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to pretrain each individual module, then jointly finetune the full model with additional physical violation loss.
 
-#### Pretraining
-We use the [pretrained checkpoint](https://livebournemouthac-my.sharepoint.com/:u:/g/personal/ynie_bournemouth_ac_uk/EcA66Nb1aI1KitzX7avbE10BiHGzovf3rqQebeJHmFB4QA?e=4hE8zv) of [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to load weights for ODN.
+#### Pretraining of Initial Estimation Stage
+We use the [pretrained checkpoint](https://livebournemouthac-my.sharepoint.com/:u:/g/personal/ynie_bournemouth_ac_uk/EWuyQXemB25Gq5ssOZfFKyQBA7w2URXR3HLvjJiKkChaiA?e=0Zk9n0) of [Total3DUnderstanding](https://github.com/yinyunie/Total3DUnderstanding) to load weights for ODN.
 Please download and rename the checkpoint to ```out/pretrained_models/total3d/model_best.pth```.
 Other modules can be trained then tested with the following steps:
 
@@ -109,20 +82,50 @@ Other modules can be trained then tested with the following steps:
     python main.py configs/ldif.yaml
     ```
     The pretrained checkpoint can be found at ```out/ldif/[start_time]/model_best.pth```
+    (alternatively, you can download the pretrained model [here](https://stduestceducn-my.sharepoint.com/:u:/g/personal/2015010912010_std_uestc_edu_cn/EQj2e3Utbg1HnkNh1e6YslABTml0R8Eng5-X3ic5jD2LFA?e=2vreNA), and unzip it into out/ldif/20101613380518/)
     
     The training process is followed with a quick test without ICP and Chamfer distance evaluated. In case you want to align mesh and evaluate the Chamfer distance during testing:
     ```
     python main.py configs/ldif.yaml --mode train
     ```
     The generated object meshes can be found at ```out/ldif/[start_time]/visualization```
-    
-3. Replace the checkpoint directories of LEN and LIEN in ```configs/total3d_ldif_gcnn.yaml``` with the checkpoints trained above, then train SGCN by:
+
+## Training of Refinement Stage
+
+1. Replace the checkpoint directories of LEN and LIEN in ```configs/total3d_ldif_gcnn.yaml``` with the checkpoints trained above, then train SGCN by:
     ```
     python main.py configs/total3d_ldif_gcnn.yaml
     ```
     The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
 
-#### Joint finetune
+So that you can train our baseline.
+
+2. Replace the checkpoint directories of LEN and LIEN in ```...``` with the checkpoints trained above, then train GAT network by:
+    ```
+    python main.py configs/....yaml
+    ```
+    The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
+
+So that you can train our GAT network.
+
+3. Replace the checkpoint directories of LEN and LIEN in ```...``` with the checkpoints trained above, then train Decoder-Only Transformer by:
+    ```
+    python main.py configs/....yaml
+    ```
+    The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
+
+So that you can train our Decoder-Only Transformer network.
+
+4. Replace the checkpoint directories of LEN and LIEN in ```...``` with the checkpoints trained above, then train fully-implemented Transformer by:
+    ```
+    python main.py configs/....yaml
+    ```
+    The pretrained checkpoint can be found at ```out/total3d/[start_time]/model_best.pth```
+
+So that you can train our fully-implemented Transformer network.
+
+
+#### Joint finetune (Final Step of Training)
 
 1. Replace the checkpoint directory in ```configs/total3d_ldif_gcnn_joint.yaml``` with the one trained in the last step above, then train the full model by:
     ```
@@ -140,7 +143,7 @@ Other modules can be trained then tested with the following steps:
 
 1. The training process above already include a testing process. In case you want to test LIEN+LDIF or full model by yourself:
     ```
-    python main.py out/[ldif/total3d]/[start_time]/model_best.pth --mode test
+    python main.py out/[ldif/total3d]/[start_time]/out_config.yaml --mode test
     ```
     The results will be saved to ```out/total3d/[start_time]/visualization``` and the evaluation metrics will be logged to wandb as run summary.
 
